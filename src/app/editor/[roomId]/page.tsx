@@ -3,7 +3,14 @@
 import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-
+import CodeMirror from '@uiw/react-codemirror';
+import { javascript } from '@codemirror/lang-javascript';
+import { oneDark } from '@codemirror/theme-one-dark';
+import { python } from '@codemirror/lang-python';
+import { html } from '@codemirror/lang-html';
+import { cpp } from '@codemirror/lang-cpp';
+import { java } from '@codemirror/lang-java';
+import { rust } from '@codemirror/lang-rust';
 export default function EditorPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -18,7 +25,49 @@ export default function EditorPage() {
             socketId:2,name:"jone Doe"
         }
         ]); // Simulated users list
+  const [code, setCode] = useState('// Start coding...\nconsole.log("Hello World!");');
+  const [output, setOutput] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
+  const [isRunning, setIsRunning] = useState(false);
 
+  const languageExtensions = {
+    javascript: javascript(),
+    python: python(),
+    html: html(),
+    cpp: cpp(),
+    java: java(),
+    rust: rust(),
+  };
+
+  const runCode = async () => {
+  setIsRunning(true);
+  setOutput('Running code...');
+  
+  // This is a simple client-side execution example
+  // For production, you should send code to a secure backend
+  try {
+    if (selectedLanguage === 'javascript') {
+      // Capture console.log outputs
+      const originalConsoleLog = console.log;
+      let logs: string[] = [];
+      console.log = (...args) => {
+        logs.push(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' '));
+      };
+      
+      // Execute the code
+      eval(code);
+      
+      console.log = originalConsoleLog; // Restore console
+      setOutput(logs.join('\n') || 'Code executed (no output)');
+    } else {
+      setOutput(`Code execution for ${selectedLanguage} would be handled by backend`);
+    }
+  } catch (error) {
+    setOutput(`Error: ${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    setIsRunning(false);
+  }
+};
   useEffect(() => {
     toast.success(`Welcome to room ${roomId}, ${userName}!`);
     
@@ -109,24 +158,61 @@ export default function EditorPage() {
       {/* Main Editor Area */}
       <div className="flex-1 flex flex-col">
         {/* Editor Header */}
-        <header className="bg-gray-800 border-b border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Code Editor - Room: {roomId}</h2>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-300">Your are: {userName}</span>
-            </div>
+      <header className="bg-gray-800 border-b border-gray-700 p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Code Editor - Room: {roomId}</h2>
+          <div className="flex items-center space-x-4">
+            <select 
+              value={selectedLanguage}
+              onChange={(e) => setSelectedLanguage(e.target.value)}
+              className="bg-gray-700 text-white px-3 py-1 rounded border border-gray-600"
+            >
+              <option value="javascript">JavaScript</option>
+              <option value="python">Python</option>
+              <option value="html">HTML</option>
+              <option value="cpp">C++</option>
+              <option value="java">Java</option>
+              <option value="rust">Rust</option>
+            </select>
+            
+            <button
+              onClick={runCode}
+              disabled={isRunning}
+              className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-1 rounded"
+            >
+              {isRunning ? 'Running...' : 'Run Code'}
+            </button>
+            
+            <span className="text-sm text-gray-300">You are: {userName}</span>
           </div>
-        </header>
+        </div>
+      </header>
 
         {/* Code Editor Area */}
         <main className="flex-1 p-4 bg-gray-850">
           <div className="bg-gray-800 rounded-lg p-4 h-full">
-            <div className="bg-gray-700 rounded p-4 min-h-[400px] h-full">
-              <p className="text-gray-400 text-center">Code editor will be implemented here</p>
-              {/* TODO: Add CodeMirror or Monaco editor component here */}
-            </div>
+            {/* Code Editor Area */}
+            <main className="flex-1 p-4 bg-gray-850">
+          <div className="bg-gray-800 rounded-lg p-4 h-full">
+                <CodeMirror
+                  value={code}
+                  height="100%"
+                  theme={oneDark}
+                  extensions={[languageExtensions[selectedLanguage as keyof typeof languageExtensions]]}
+                  onChange={setCode}
+                  className="h-full rounded"
+                />
+              </div>
+            </main>
           </div>
         </main>
+        {/* Output Area */}
+        <div className="mt-4 bg-gray-800 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-300 mb-2">Output:</h3>
+          <pre className="bg-gray-900 p-3 rounded text-sm font-mono whitespace-pre-wrap min-h-[100px] max-h-[200px] overflow-y-auto">
+            {output || 'Output will appear here...'}
+          </pre>
+        </div>
       </div>
     </div>
   );
