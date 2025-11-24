@@ -107,7 +107,7 @@ const runCode = async () => {
   toast.success(`Welcome to room ${roomId}, ${userName}!`);
 
   // Initialize socket connection
-  const newSocket = io('http://localhost:3001'); // NestJS server URL
+  const newSocket = io('https://code-collab-backend-ten.vercel.app/'); // NestJS server URL
   
   socketRef.current = newSocket;
   setSocket(newSocket);
