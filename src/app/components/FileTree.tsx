@@ -16,11 +16,11 @@ interface FileTreeProps {
 // FileTree component
 export default function FileTree({
   node,
-  level = 0,
-  onFileSelect,
-  selectedFile = null,
-  onAddItem,
-  onDeleteItem,
+//   level = 0,
+//   onFileSelect,
+//   selectedFile = null,
+//   onAddItem,
+//   onDeleteItem,
   onRenameItem,
   onContextMenu,
 }: FileTreeProps) {

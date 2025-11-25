@@ -5,7 +5,7 @@ import { FileNode, createFileNode } from '@/types/fileSystem';
 import FileTree from './FileTree';
 
 interface FileExplorerProps {
-  onFileSelect: (file: FileNode) => void;
+  onFileSelect: (file: FileNode | null) => void;
   selectedFile: FileNode | null;
   fileSystem: FileNode;
   onFileSystemChange: (newFileSystem: FileNode) => void;
@@ -67,7 +67,7 @@ export default function FileExplorer({
     onFileSystemChange(removeFromParent({ ...fileSystem }));
     
     if (selectedFile?.id === nodeToDelete.id) {
-      onFileSelect(null as any);
+      onFileSelect(null);
     }
   };
 

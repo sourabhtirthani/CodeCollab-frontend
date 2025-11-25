@@ -13,7 +13,6 @@ import { java } from '@codemirror/lang-java';
 import { rust } from '@codemirror/lang-rust';
 import { io, Socket } from 'socket.io-client';
 import { useRef } from 'react';
-import { EditorView } from '@codemirror/view';
 import { createFileNode, FileNode } from '@/types/fileSystem';
 import FileExplorer from '@/app/components/FileExplorer';
 
@@ -33,7 +32,7 @@ export default function EditorPage() {
   const [output, setOutput] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const [isRunning, setIsRunning] = useState(false);
-  const [socket, setSocket] = useState<Socket | null>(null);
+ // const [socket, setSocket] = useState<Socket | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [fileSystem, setFileSystem] = useState<FileNode>(() => 
@@ -58,7 +57,7 @@ const runCode = async () => {
   try {
     if (selectedLanguage === 'javascript') {
       const originalConsoleLog = console.log;
-      let logs: string[] = [];
+      const logs: string[] = [];
       console.log = (...args) => {
         logs.push(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : String(arg)).join(' '));
       };
@@ -110,7 +109,7 @@ const runCode = async () => {
   const newSocket = io('https://code-collab-backend-ten.vercel.app/'); // NestJS server URL
   
   socketRef.current = newSocket;
-  setSocket(newSocket);
+ // setSocket(newSocket);
 
   // Join room
   newSocket.emit('join-room', { roomId, userName });
@@ -230,7 +229,12 @@ const handleLanguageChange = (newLanguage: string) => {
     socketRef.current.emit('language-change', { roomId, language: newLanguage });
   }
 };
-const handleFileSelect = (file: FileNode) => {
+const handleFileSelect = (file: FileNode | null) => {
+  if (!file) {
+    setSelectedFile(null);
+    return;
+  }
+
   setSelectedFile(file);
   
   // Add to open files if not already open

@@ -80,7 +80,7 @@ export default function Home() {
         </form>
 
         <div className="mt-6 text-center">
-          <p className="text-gray-300 mb-3">Don't have a room ID?</p>
+          <p className="text-gray-300 mb-3">Don&rsquo;t have a room ID?</p>
           <button
             onClick={handleCreateNewRoom}
             className="text-blue-400 hover:text-blue-300 font-semibold underline transition-colors"
