@@ -104,9 +104,12 @@ const runCode = async () => {
 };
   useEffect(() => {
   toast.success(`Welcome to room ${roomId}, ${userName}!`);
+    const socketUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
   // Initialize socket connection
-  const newSocket = io('https://code-collab-backend-ten.vercel.app/'); // NestJS server URL
+  const newSocket = io(socketUrl, {
+  transports: ['websocket', 'polling'] // Ensure both transports are available
+}); // NestJS server URL
   
   socketRef.current = newSocket;
  // setSocket(newSocket);
