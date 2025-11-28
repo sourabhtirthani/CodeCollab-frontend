@@ -15,9 +15,10 @@ import { io, Socket } from 'socket.io-client';
 import { useRef } from 'react';
 import { createFileNode, FileNode } from '@/types/fileSystem';
 import FileExplorer from '@/app/components/FileExplorer';
+import ChatWidget from '@/app/components/chatbot/ChatWidget';
 
 
-// Create custom cursor decorations
+// Create custom cursor decorations 
 
 
 
@@ -32,6 +33,8 @@ export default function EditorPage() {
   const [output, setOutput] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const [isRunning, setIsRunning] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
  // const [socket, setSocket] = useState<Socket | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
@@ -105,7 +108,7 @@ const runCode = async () => {
   useEffect(() => {
   toast.success(`Welcome to room ${roomId}, ${userName}!`);
     const socketUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-
+    console.log('Connecting to socket URL:', socketUrl);  
   // Initialize socket connection
   const newSocket = io(socketUrl, {
   transports: ['websocket', 'polling'] // Ensure both transports are available
@@ -411,6 +414,11 @@ const handleFileSelect = (file: FileNode | null) => {
           </pre>
         </div>
       </div>
+      <ChatWidget
+      socket={socketRef.current}
+      roomId={roomId}
+      userName={userName}
+    />
     </div>
   );
 }
