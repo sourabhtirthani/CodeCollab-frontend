@@ -22,10 +22,15 @@ export default function ChatWidget({ socket, roomId, userName }: ChatWidgetProps
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [connectionError, setConnectionError] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  console.log('ChatWidget - Socket:', socket?.connected);
+  // console.log('ChatWidget - IsClient:', isClient);
+  console.log('ChatWidget - IsConnected:', isConnected);
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = () => {
@@ -37,50 +42,92 @@ export default function ChatWidget({ socket, roomId, userName }: ChatWidgetProps
   }, [messages]);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) {
+      setConnectionError('Socket not available');
+      return;
+    }
 
-    // Socket event listeners for chat
-    socket.on('connect', () => {
+    console.log('Setting up chat socket listeners...', {
+      socketConnected: socket.connected,
+      socketId: socket.id
+    });
+
+    const handleConnect = () => {
+      console.log('Chat connected! Joining room:', roomId);
       setIsConnected(true);
-    });
+      setConnectionError('');
 
-    socket.on('disconnect', () => {
+      // Join chat room when connected
+      socket.emit('join-chat', roomId, (response: any) => {
+        console.log('Join chat response:', response);
+      });
+    };
+
+    const handleDisconnect = () => {
+      console.log('Chat disconnected!');
       setIsConnected(false);
-    });
+      setConnectionError('Disconnected from server');
+    };
 
-    // Listen for new chat messages
-    socket.on('chat-message', (data: Omit<ChatMessage, 'timestamp'> & { timestamp: string }) => {
+    const handleChatMessage = (data: any) => {
+      console.log('Received chat message:', data);
       const message: ChatMessage = {
         ...data,
         timestamp: new Date(data.timestamp)
       };
       setMessages(prev => [...prev, message]);
-      
-      // Increase unread count if chat is closed
+
       if (!isOpen) {
         setUnreadCount(prev => prev + 1);
       }
-    });
+    };
 
-    // Listen for chat history when joining
-    socket.on('chat-history', (chatHistory: Array<Omit<ChatMessage, 'timestamp'> & { timestamp: string }>) => {
-      const history = chatHistory.map(msg => ({
+    const handleChatHistory = (chatHistory: any) => {
+      console.log('Received chat history:', chatHistory);
+      const history = chatHistory.map((msg: any) => ({
         ...msg,
         timestamp: new Date(msg.timestamp)
       }));
       setMessages(history);
-    });
+    };
 
-    // Join chat room
-    socket.emit('join-chat', roomId);
+    const handleConnectError = (error: Error) => {
+      console.error('Chat connection error:', error);
+      setConnectionError('Connection failed: ' + error.message);
+    };
+
+    // Set up event listeners
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('chat-message', handleChatMessage);
+    socket.on('chat-history', handleChatHistory);
+    socket.on('connect_error', handleConnectError);
+
+    // MANUALLY TRIGGER CONNECTION if socket is already connected
+    if (socket.connected) {
+      console.log('Socket already connected, manually joining chat...');
+      handleConnect();
+    } else {
+      console.log('Socket not connected yet, waiting for connect event...');
+    }
+
+    // Test: Send a test message to see if backend responds
+    setTimeout(() => {
+      if (socket.connected) {
+        console.log('Sending test join-chat event...');
+        socket.emit('join-chat', roomId);
+      }
+    }, 1000);
 
     return () => {
-      socket.off('chat-message');
-      socket.off('chat-history');
-      socket.off('connect');
-      socket.off('disconnect');
+      console.log('Cleaning up chat listeners...');
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('chat-message', handleChatMessage);
+      socket.off('chat-history', handleChatHistory);
+      socket.off('connect_error', handleConnectError);
     };
-  }, [socket, roomId]);
+  }, [socket, roomId, isOpen]);
 
   const sendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,7 +145,7 @@ export default function ChatWidget({ socket, roomId, userName }: ChatWidgetProps
     // Emit message to server
     socket.emit('send-message', messageData);
     setNewMessage('');
-    
+
     // Refocus input after sending
     inputRef.current?.focus();
   };
@@ -131,18 +178,17 @@ export default function ChatWidget({ socket, roomId, userName }: ChatWidgetProps
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
-          
+
           {/* Unread Badge */}
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
-          
+
           {/* Connection Status Dot */}
-          <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-900 ${
-            isConnected ? 'bg-green-400' : 'bg-red-400'
-          }`} />
+          <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-900 ${isConnected ? 'bg-green-400' : 'bg-red-400'
+            }`} />
         </button>
       </div>
 
